@@ -20,6 +20,8 @@ using namespace std;
 #define MATCH_PAREN  '.'
 #define UNKNW_PAREN  '?'
 
+#define STREAK
+
 int solution(string &S, int K)
 {
     int size = S.length();
@@ -39,26 +41,41 @@ int solution(string &S, int K)
         if ((st_idx != -1) && (st[st_idx] == LEFT_PAREN) && (str[i] == RIGHT_PAREN)) {
             str[i] = str[pos[pos_idx]] = MATCH_PAREN;
 
+#ifdef STREAK
+            streak += 2;
+            while (fix[fix_idx] > 0) {
+                streak += fix[fix_idx];
+                fix_idx--;
+            }
+
+            fix_idx--;
+#endif
             st_idx--;
             pos_idx--;
 
-#ifdef STREAK
-            streak += 2;
-#endif
         } else {
 #ifdef STREAK
-            if (fix_idx == -1 || fix[fix_idx] == LEFT_PAREN || fix[fix_idx] == RIGHT_PAREN) {
-                fix[++fix_idx] = 0;
+            if (streak > 0) {
+                if (fix_idx == -1 || fix[fix_idx] == LEFT_PAREN_MARK || fix[fix_idx] == RIGHT_PAREN_MARK) {
+                    fix[++fix_idx] = 0;
+                }
+
+                fix[fix_idx] += streak;
+                streak = 0;
             }
 
-            fix[fix_idx] += streak;
-            streak = 0;
-
-            fix[++fix_idx] = (S[i]=='(' ? LEFT_PAREN_MARK : RIGHT_PAREN_MARK);
+            fix[++fix_idx] = (str[i]=='(' ? LEFT_PAREN_MARK : RIGHT_PAREN_MARK);
 #endif
             st[++st_idx] = S[i];
             pos[++pos_idx] = i;
         }
+        /*
+           cout << "Streak [" << streak << "]: ";
+           for (int i=0; i<fix_idx+1; ++i) {
+           cout << fix[i] << ",";
+           }
+           cout << endl;
+           */
     }
 #ifdef STREAK
     if (streak > 0) {
@@ -71,6 +88,13 @@ int solution(string &S, int K)
     fix_idx++;
 #endif
 
+    /*
+    cout << "Streak: ";
+    for (int i=0; i<fix_idx; ++i) {
+        cout << fix[i] << ",";
+    }
+    cout << endl;
+    */
 #ifndef STREAK
     fix_idx++;
     int length = 0;
@@ -95,7 +119,13 @@ int solution(string &S, int K)
         fix[fix_idx++] = length;
     }
 #endif
-
+    /*
+    cout << "Normal: ";
+    for (int i=0; i<fix_idx; ++i) {
+        cout << fix[i] << ",";
+    }
+    cout << endl;
+*/
     /* Check the substrings */
     int maxLength = 0;
     int prevSymbol = UNKNW_PAREN_MARK;
