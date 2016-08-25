@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+
 #include <string>
 #include <stack>
 #include <vector>
@@ -8,7 +9,7 @@
 
 using namespace std;
 
-#define DEBUG
+//#define DEBUG
 
 template<typename T>
 void printStack(const string &text, const stack<T> &s, bool showComma = true)
@@ -41,79 +42,128 @@ void printVector(const string &text, const vector<T> &v, bool showComma = true)
     cout << "]" << endl;
 }
 
-void matchParenthesis(stack<char> &in_st, stack<int> &in_pos,
-                      stack<char> &out_st, stack<int> &out_pos,
-                      vector<int> &group, int maxMatches = INT_MAX)
-{
-    while (maxMatches > 0 && !in_st.empty()) {
-#ifdef DEBUG
-        cout << "Symbol: " << in_st.top() << endl;
-#endif // DEBUG
-
-        if (out_st.empty() == false && out_st.top() == '(' && in_st.top() == ')') {
-            group[in_pos.top()] = 1;
-            group[out_pos.top()] = 1;
-
-            out_st.pop();
-            out_pos.pop();
-
-            maxMatches--;
-        } else {
-            out_st.push(in_st.top());
-            out_pos.push(in_pos.top());
-        }
-
-        in_st.pop();
-        in_pos.pop();
-
-#ifdef DEBUG
-        printStack("  In. Stack: ", in_st, false);
-        printStack("  Out. Stack:", out_st, false);
-        printStack("  In. Pos:   ", in_pos);
-        printStack("  Out. Pos:  ", out_pos);
-        printVector("  Group:", group);
-#endif // DEBUG
-    }
-}
+#define RIGHT_PAREN -1
+#define LEFT_PAREN  -2
+#define MATCH_PAREN  1
+#define UNKNW_PAREN  0
 
 int solution(string &S, int K)
 {
-    stack<char> stA, stB;
-    stack<int> posA, posB;
+    stack<char> st;
+    stack<int> pos;
     vector<int> group;
 
-    group.resize(S.length(), -1);
+    group.resize(S.length());
 
-    /* Initialize input stack */
-    for (int i = S.length()-1; i>=0; --i) {
-        stA.push(S[i]);
-        posA.push(i);
+    for (int i=0; i<(int)S.length(); ++i) {
+#ifdef DEBUG
+        cout << "Symbol: " << S[i] << endl;
+#endif // DEBUG
+        if (st.empty() == false && st.top() == '(' && S[i] == ')') {
+            group[i] = 1;
+            group[pos.top()] = 1;
+
+            st.pop();
+            pos.pop();
+        } else {
+            group[i] = (S[i] == '(' ? LEFT_PAREN : RIGHT_PAREN);
+            st.push(S[i]);
+            pos.push(i);
+        }
+#ifdef DEBUG
+        printStack("  Stack:", st, false);
+        printStack("  Pos:  ", pos);
+        printVector("  Group:", group);
+#endif // DEBUG
     }
 
-    matchParenthesis(stA, posA, stB, posB, group);
 #ifdef DEBUG
-    cout << "Start fix" << endl << endl;
-#endif // DEBUG
-    matchParenthesis(stB, posB, stA, posA, group, K);
+    cout << "Start fix" << endl << "    " << endl;
 
-    int maxGroup = 0;
-    int groupSize = 0;
-
-    for (vector<int>::iterator it = group.begin(); it != group.end(); ++it) {
-        if (*it == -1) {
-            if (groupSize > maxGroup) {
-                maxGroup = groupSize;
-            }
-            groupSize = 0;
-        } else {
-            groupSize++;
+    for (int i=0; i<(int)group.size(); ++i) {
+        if (group[i] == 1) {
+            cout << ".";
+        } else if (group[i] == -1) {
+            cout << ")";
+        } else if (group[i] == -2) {
+            cout << "(";
         }
     }
-    if (groupSize > maxGroup) {
-        maxGroup = groupSize;
+    cout << endl << endl;
+#endif // DEBUG
+
+    /* Check the substrings */
+    int maxLength = 0;
+    int prevSymbol = 0;
+
+    for (int i=0; i<(int)group.size(); ++i) {
+        int length = 0;
+        int edits = K;
+
+        if (prevSymbol == MATCH_PAREN) {
+            /* Don't start analyzing when previous symbol
+             * is not an unmatched parenthesis */
+            prevSymbol = group[i];
+            continue;
+        }
+        prevSymbol = group[i];
+
+#ifdef DEBUG
+        cout << "Start substring at " << i << endl << "    ";
+#endif // DEBUG
+
+        for (int j=i, prevBracket=0; j<(int)group.size(); ++j) {
+            if (group[j] == MATCH_PAREN) {
+#ifdef DEBUG
+                cout << ".";
+#endif // DEBUG
+                length++;
+                continue;
+            }
+            if (edits == 0) {
+                break;
+            }
+
+            if (group[j] == prevBracket) {
+#ifdef DEBUG
+                if (group[j] == -1) {
+                    cout << ">";
+                } else {
+                    cout << "<";
+                }
+#endif // DEBUG
+                length +=2;
+                edits--;
+                prevBracket = MATCH_PAREN;
+            } else if (prevBracket == RIGHT_PAREN && group[j] == LEFT_PAREN) {
+                if (edits < 2) {
+#ifdef DEBUG
+                    cout << "(";
+#endif // DEBUG
+                    break;
+                }
+#ifdef DEBUG
+                cout << "|";
+#endif // DEBUG
+                length +=2;
+                edits -= 2;
+                prevBracket = MATCH_PAREN;
+            } else {
+                prevBracket = group[j];
+            }
+        }
+
+#ifdef DEBUG
+        cout << endl << "Length " << length << ", max " << maxLength << endl;
+#endif // DEBUG
+
+        if (length > maxLength) {
+            maxLength = length;
+        }
     }
 
-    return maxGroup;
+
+    return maxLength;
 }
 
 int main(int argc, char **argv)
