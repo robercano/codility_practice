@@ -6,6 +6,7 @@
 #include <vector>
 #include <iostream>
 #include <climits>
+#include <unistd.h>
 
 using namespace std;
 
@@ -166,17 +167,78 @@ int solution(string &S, int K)
     return maxLength;
 }
 
+void usage()
+{
+    fprintf(stderr, "\n");
+    fprintf(stderr, "Usage:\n");
+    fprintf(stderr, "    titanium [-p <pattern> | -n <length> ] -k <rotations> [-s <seed>]\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "-p : Specifies the parenthesis pattern to be processed. Exclusive with -n option\n");
+    fprintf(stderr, "-n : Specifies the length of the random pattern to be generated. Exclusive with -p option\n");
+    fprintf(stderr, "-k : Maximum number of rotations to allow\n");
+    fprintf(stderr, "-s : Seed to be used for the random pattern generation, only when used with -n\n");
+    fprintf(stderr, "\n");
+}
+
 int main(int argc, char **argv)
 {
-    if (argc <= 2) {
-        printf("Usage:\n\ttitanium \"<string>\" <K>\n\n<string> - List of parenthesis\n<K> - Max. number of swaps\n\n");
-        return 1;
+    string S;
+    int c;
+    int N = -1, K = -1, seed = 0;
+
+    /* Parse the options */
+    while ((c = getopt(argc, argv, "p:n:k:s:")) != -1) {
+        switch (c) {
+            case 'p':
+                S = optarg;
+                break;
+            case 'n':
+                N = strtol(optarg, NULL, 0);
+                break;
+            case 'k':
+                K = strtol(optarg, NULL, 0);
+                break;
+            case 's':
+                seed = strtol(optarg, NULL, 0);
+                break;
+        }
     }
 
-    string S = argv[1];
-    int K = strtol(argv[2], NULL, 0);
+    if (N == LONG_MIN || N == LONG_MAX) {
+        fprintf(stderr, "ERROR wrong parameter for option -n\n");
+        usage();
+        exit(1);
+    }
+    if (K == LONG_MIN || K == LONG_MAX) {
+        fprintf(stderr, "ERROR wrong parameter for option -k\n");
+        usage();
+        exit(1);
+    }
+    if (seed == LONG_MIN || seed == LONG_MAX) {
+        fprintf(stderr, "ERROR wrong parameter for option -s\n");
+        usage();
+        exit(1);
+    }
+    if (S.length() != 0 && N != -1) {
+        fprintf(stderr, "ERROR -p and -n option cannot be used together\n");
+        usage();
+        exit(1);
+    }
+    if (S.length() == 0 && (N == -1 || K == -1)) {
+        fprintf(stderr, "ERROR -n and -k options mandatory when -p is not used\n");
+        usage();
+        exit(1);
+    }
+
+    /* Generate the random pattern if required */
+    if (S.length() == 0) {
+        S.resize(N, 0);
+        srand(seed);
+
+        for (int i=0; i<N; ++i) {
+            S[i] = random()%2 ? '(' : ')';
+        }
+    }
 
     printf("%d\n", solution(S, K));
-
-    return 0;
 }

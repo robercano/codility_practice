@@ -12,6 +12,6 @@ fi
 SEED=123213
 
 while read -r NUMPAR NUMROT; do
-    ./titanium $SEED $NUMPAR $NUMROT
+    ./titanium -s $SEED -n $NUMPAR -k $NUMROT
     SEED=$((SEED+1))
 done < $TESTFILE
