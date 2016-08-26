@@ -66,33 +66,33 @@ int solution(string &S, int K)
     /* Check the substrings */
     int maxLength = 0;
 
-    int st_size = st - st_base + 1;
-    st = &stbuf[1];
+    int st_size = st-st_base+1;
+    int *st_end = &stbuf[st_size + 1];
 
     for (int i=0; i<st_size; ++i) {
         int length = 0;
         int edits = K;
 
-        if (st[i-1] < 0) {
+        if (stbuf[i] < 0) {
             continue;
         }
 
-        int j = i;
+        st = &stbuf[i+1];
 
-        for (int prevBracket=0; j<st_size; ++j) {
-            if (st[j] < 0) {
-                length += -st[j];
+        for (int prevBracket=0; st!=st_end; ++st) {
+            if (*st < 0) {
+                length += -*st;
                 continue;
             }
             if (edits == 0) {
                 break;
             }
 
-            if (st[j] == prevBracket) {
+            if (*st == prevBracket) {
                 length +=2;
                 edits--;
                 prevBracket = MATCH_PAREN;
-            } else if (prevBracket == RIGHT_PAREN && st[j] == LEFT_PAREN) {
+            } else if (prevBracket == RIGHT_PAREN && *st == LEFT_PAREN) {
                 if (edits < 2) {
                     break;
                 }
@@ -100,7 +100,7 @@ int solution(string &S, int K)
                 edits -= 2;
                 prevBracket = MATCH_PAREN;
             } else {
-                prevBracket = st[j];
+                prevBracket = *st;
             }
         }
 
@@ -110,7 +110,7 @@ int solution(string &S, int K)
 
         /* If we've reached the last position no point
          * on continuing processing */
-        if (j == st_size) {
+        if (st == st_end) {
             break;
         }
     }
