@@ -11,25 +11,22 @@
 
 using namespace std;
 
-#define LEFT_PAREN_MARK  -1
-#define RIGHT_PAREN_MARK -2
-#define MATCH_PAREN_MARK  1
-#define UNKNW_PAREN_MARK  0
-
 #define LEFT_PAREN  '('
 #define RIGHT_PAREN ')'
 #define MATCH_PAREN  '.'
-#define UNKNW_PAREN  '?'
+
+//#define TIME
 
 int solution(string &S, int K)
 {
     int size = S.length();
-    char st[size];
-    int st_idx = -1;
-    int fix[size];
-    int fix_idx = -1;
+
+    int stbuf[size+1];
+    int *st = &stbuf[0];
+    int *st_base = st + 1;
 
     char *str = &S[0];
+    char *str_end = str + size;
     int streak = 0;
 
 #ifdef TIME
@@ -37,40 +34,28 @@ int solution(string &S, int K)
     gettimeofday(&start, NULL);
 #endif
 
-    for (int i=0; i<size; ++i) {
-        if ((st_idx == -1) || (st[st_idx] != LEFT_PAREN) || (str[i] != RIGHT_PAREN)) {
-            if (streak != 0 && (fix_idx == -1 || fix[fix_idx] == LEFT_PAREN_MARK || fix[fix_idx] == RIGHT_PAREN_MARK)) {
-                fix[++fix_idx] = 0;
+    stbuf[0] = 0;
+
+    for (; str != str_end; ++str) {
+        if (*str != RIGHT_PAREN || *st != LEFT_PAREN) {
+            if (streak != 0) {
+                *++st = streak;
+                streak = 0;
             }
-
-            fix[fix_idx] += streak;
-            streak = 0;
-
-            fix[++fix_idx] = (str[i]=='(' ? LEFT_PAREN_MARK : RIGHT_PAREN_MARK);
-            st[++st_idx] = str[i];
-
+            *++st = *str;
         } else {
-            /* Matching parenthesis */
-            streak += 2;
+            streak += -2;
+            st--;
 
-            if (fix[fix_idx] > 0) {
-                streak += fix[fix_idx];
-                fix_idx--;
+            if (st >= st_base && *st < 0) {
+                streak += *st--;
             }
-
-            fix_idx--;
-            st_idx--;
         }
     }
-    if (streak > 0) {
-        if (fix_idx == -1 || fix[fix_idx] == LEFT_PAREN_MARK || fix[fix_idx] == RIGHT_PAREN_MARK) {
-            fix[++fix_idx] = 0;
-        }
 
-        fix[fix_idx] += streak;
-        streak = 0;
+    if (streak != 0) {
+        *++st = streak;
     }
-    fix_idx++;
 
 #ifdef TIME
     gettimeofday(&end, NULL);
@@ -80,47 +65,42 @@ int solution(string &S, int K)
 
     /* Check the substrings */
     int maxLength = 0;
-    int prevSymbol = UNKNW_PAREN_MARK;
 
-    for (int i=0; i<fix_idx; ++i) {
+    int st_size = st - st_base + 1;
+    st = &stbuf[1];
+
+    for (int i=0; i<st_size; ++i) {
         int length = 0;
         int edits = K;
 
-        if (prevSymbol != LEFT_PAREN_MARK &&
-            prevSymbol != RIGHT_PAREN_MARK &&
-            prevSymbol != UNKNW_PAREN_MARK) {
-            /* Don't start analyzing when previous symbol
-             * is not an unmatched parenthesis */
-            prevSymbol = fix[i];
+        if (st[i-1] < 0) {
             continue;
         }
-        prevSymbol = fix[i];
 
         int j = i;
 
-        for (int prevBracket=0; j<fix_idx; ++j) {
-            if (fix[j] != LEFT_PAREN_MARK &&
-                fix[j] != RIGHT_PAREN_MARK) {
-                length += fix[j];
+        for (int prevBracket=0; j<st_size; ++j) {
+            if (st[j] < 0) {
+                length += -st[j];
                 continue;
             }
             if (edits == 0) {
                 break;
             }
 
-            if (fix[j] == prevBracket) {
+            if (st[j] == prevBracket) {
                 length +=2;
                 edits--;
-                prevBracket = MATCH_PAREN_MARK;
-            } else if (prevBracket == RIGHT_PAREN_MARK && fix[j] == LEFT_PAREN_MARK) {
+                prevBracket = MATCH_PAREN;
+            } else if (prevBracket == RIGHT_PAREN && st[j] == LEFT_PAREN) {
                 if (edits < 2) {
                     break;
                 }
                 length +=2;
                 edits -= 2;
-                prevBracket = MATCH_PAREN_MARK;
+                prevBracket = MATCH_PAREN;
             } else {
-                prevBracket = fix[j];
+                prevBracket = st[j];
             }
         }
 
@@ -130,7 +110,7 @@ int solution(string &S, int K)
 
         /* If we've reached the last position no point
          * on continuing processing */
-        if (j == fix_idx) {
+        if (j == st_size) {
             break;
         }
     }
@@ -215,5 +195,8 @@ int main(int argc, char **argv)
         }
     }
 
-    printf("%d\n", solution(S, K));
+    int ret = solution(S, K);
+
+    printf("%d\n", ret);
+    return 0;
 }
