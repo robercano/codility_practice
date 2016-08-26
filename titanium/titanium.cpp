@@ -7,6 +7,7 @@
 #include <iostream>
 #include <climits>
 #include <unistd.h>
+#include <sys/time.h>
 
 using namespace std;
 
@@ -20,112 +21,63 @@ using namespace std;
 #define MATCH_PAREN  '.'
 #define UNKNW_PAREN  '?'
 
-#define STREAK
-
 int solution(string &S, int K)
 {
     int size = S.length();
     char st[size];
     int st_idx = -1;
-    int pos[size];
-    int pos_idx = -1;
     int fix[size];
     int fix_idx = -1;
 
     char *str = &S[0];
-#ifdef STREAK
     int streak = 0;
+
+#ifdef TIME
+    struct timeval start, end;
+    gettimeofday(&start, NULL);
 #endif
 
     for (int i=0; i<size; ++i) {
-        if ((st_idx != -1) && (st[st_idx] == LEFT_PAREN) && (str[i] == RIGHT_PAREN)) {
-            str[i] = str[pos[pos_idx]] = MATCH_PAREN;
+        if ((st_idx == -1) || (st[st_idx] != LEFT_PAREN) || (str[i] != RIGHT_PAREN)) {
+            if (streak != 0 && (fix_idx == -1 || fix[fix_idx] == LEFT_PAREN_MARK || fix[fix_idx] == RIGHT_PAREN_MARK)) {
+                fix[++fix_idx] = 0;
+            }
 
-#ifdef STREAK
+            fix[fix_idx] += streak;
+            streak = 0;
+
+            fix[++fix_idx] = (str[i]=='(' ? LEFT_PAREN_MARK : RIGHT_PAREN_MARK);
+            st[++st_idx] = str[i];
+
+        } else {
+            /* Matching parenthesis */
             streak += 2;
-            while (fix[fix_idx] > 0) {
+
+            if (fix[fix_idx] > 0) {
                 streak += fix[fix_idx];
                 fix_idx--;
             }
 
             fix_idx--;
-#endif
             st_idx--;
-            pos_idx--;
-
-        } else {
-#ifdef STREAK
-            if (streak > 0) {
-                if (fix_idx == -1 || fix[fix_idx] == LEFT_PAREN_MARK || fix[fix_idx] == RIGHT_PAREN_MARK) {
-                    fix[++fix_idx] = 0;
-                }
-
-                fix[fix_idx] += streak;
-                streak = 0;
-            }
-
-            fix[++fix_idx] = (str[i]=='(' ? LEFT_PAREN_MARK : RIGHT_PAREN_MARK);
-#endif
-            st[++st_idx] = S[i];
-            pos[++pos_idx] = i;
         }
-        /*
-           cout << "Streak [" << streak << "]: ";
-           for (int i=0; i<fix_idx+1; ++i) {
-           cout << fix[i] << ",";
-           }
-           cout << endl;
-           */
     }
-#ifdef STREAK
     if (streak > 0) {
-        if (fix_idx == -1 || fix[fix_idx] == LEFT_PAREN || fix[fix_idx] == RIGHT_PAREN) {
+        if (fix_idx == -1 || fix[fix_idx] == LEFT_PAREN_MARK || fix[fix_idx] == RIGHT_PAREN_MARK) {
             fix[++fix_idx] = 0;
         }
 
         fix[fix_idx] += streak;
+        streak = 0;
     }
     fix_idx++;
+
+#ifdef TIME
+    gettimeofday(&end, NULL);
+    cout << "Time matching: " << ((end.tv_sec - start.tv_sec)*1000.0 + (end.tv_usec - start.tv_usec)/1000.0) << endl;
+    gettimeofday(&start, NULL);
 #endif
 
-    /*
-    cout << "Streak: ";
-    for (int i=0; i<fix_idx; ++i) {
-        cout << fix[i] << ",";
-    }
-    cout << endl;
-    */
-#ifndef STREAK
-    fix_idx++;
-    int length = 0;
-
-    for (int i=0; i<size; ++i) {
-        if (str[i] != MATCH_PAREN) {
-            if (length > 0) {
-                fix[fix_idx++] = length;
-                length = 0;
-            }
-            if (str[i] == LEFT_PAREN) {
-                fix[fix_idx++] = LEFT_PAREN_MARK;
-            } else {
-                fix[fix_idx++] = RIGHT_PAREN_MARK;
-            }
-        } else {
-            length++;
-        }
-    }
-
-    if (length > 0) {
-        fix[fix_idx++] = length;
-    }
-#endif
-    /*
-    cout << "Normal: ";
-    for (int i=0; i<fix_idx; ++i) {
-        cout << fix[i] << ",";
-    }
-    cout << endl;
-*/
     /* Check the substrings */
     int maxLength = 0;
     int prevSymbol = UNKNW_PAREN_MARK;
@@ -182,7 +134,10 @@ int solution(string &S, int K)
             break;
         }
     }
-
+#ifdef TIME
+    gettimeofday(&end, NULL);
+    cout << "Time fixing: " << ((end.tv_sec - start.tv_sec)*1000.0 + (end.tv_usec - start.tv_usec)/1000.0) << endl;
+#endif
 
     return maxLength;
 }
