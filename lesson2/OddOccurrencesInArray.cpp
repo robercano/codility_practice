@@ -2,9 +2,20 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <limits.h>
+#include <iostream>
+
+using namespace std;
+
+#define MAX_N 1000000
+#define MAX_VALUE 1000000000L
 
 int solution(int A[], int N)
 {
+    int ret = 0;
+    for (int i=0; i<N; ++i) {
+        ret ^= A[i];
+    }
+    return ret;
 }
 
 void usage()
@@ -36,13 +47,13 @@ int main(int argc, char **argv)
         }
     }
 
-    if (N == LONG_MIN || N == LONG_MAX || N%2 != 1) {
+    if (N == LONG_MIN || N == LONG_MAX || N>MAX_N || N%2 != 1) {
         fprintf(stderr, "ERROR wrong parameter for option -n\n");
         usage();
         exit(1);
     }
 
-    A = (int*)malloc(N);
+    A = (int*)malloc(N * sizeof(int) );
     if (A == NULL) {
         fprintf(stderr, "ERROR allocating memory for array\n");
         exit(1);
@@ -51,9 +62,9 @@ int main(int argc, char **argv)
     srand(seed);
 
     for (int i=0; i<N; i+=2) {
-        A[i] = A[i+1] = random();
+        A[i] = A[i+1] = random() % MAX_VALUE;
     }
-    A[N-1] = random();
+    int result = A[N-1] = random() % MAX_VALUE;
 
     for (int i=0; i<N; i++) {
         int posA = random() % N;
@@ -64,6 +75,7 @@ int main(int argc, char **argv)
         A[posB] = swap;
     }
 
-    printf("%d\n", solution(A, N));
+    printf("%s\n", solution(A, N) == result ? "Success!" : "ERROR: Item not found");
+
     return 0;
 }
